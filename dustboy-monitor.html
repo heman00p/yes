@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบตรวจวัดฝุ่น DustBoy 🌬️</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f0f2f5; --card: #ffffff; --text: #333;
+            --safe: #2ecc71; --warn: #f1c40f; --danger: #e74c3c; --dark: #2c3e50;
+        }
+        body {
+            font-family: 'Kanit', sans-serif; background: var(--bg); color: var(--text);
+            margin: 0; padding: 20px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 30px; }
+        header h1 { color: var(--dark); margin: 0; font-size: 2rem; }
+        
+        .status-header { 
+            display: inline-flex; align-items: center; gap: 10px; 
+            background: #fff; padding: 5px 15px; border-radius: 30px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-top: 10px;
+        }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; }
+        .dot.active { background: var(--safe); box-shadow: 0 0 10px var(--safe); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .device-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        
+        .card {
+            background: var(--card); border-radius: 20px; padding: 25px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05); border-top: 8px solid #ccc;
+            transition: transform 0.3s ease;
+        }
+        .card:hover { transform: translateY(-5px); }
+        
+        .location-name { font-size: 1.2rem; font-weight: 600; color: var(--dark); margin-bottom: 5px; }
+        .device-id { font-size: 0.8rem; color: #888; margin-bottom: 15px; }
+        
+        .pm-box { text-align: center; padding: 20px 0; border-radius: 15px; margin: 15px 0; }
+        .pm-label { font-size: 1rem; color: #666; }
+        .pm-value { font-size: 4rem; font-weight: 600; line-height: 1; margin: 5px 0; }
+        .pm-unit { font-size: 0.9rem; color: #888; }
+        
+        .health-advice { 
+            font-size: 1.1rem; font-weight: 600; text-align: center; 
+            padding: 10px; border-radius: 10px; margin-bottom: 15px;
+        }
+
+        .extra-data { display: flex; justify-content: space-around; border-top: 1px solid #eee; padding-top: 15px; }
+        .extra-item { text-align: center; }
+        .extra-label { font-size: 0.8rem; color: #999; }
+        .extra-val { font-size: 1rem; font-weight: 600; color: #444; }
+
+        .update-time { font-size: 0.75rem; color: #bbb; text-align: right; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🌬️ ระบบตรวจวัดฝุ่นละออง DustBoy</h1>
+        <div class="status-header">
+            <div id="dot" class="dot"></div>
+            <span id="conn-text" style="font-size: 0.9rem;">กำลังเชื่อมต่อ...</span>
+        </div>
+    </header>
+
+    <div id="device-grid" class="device-grid">
+        <div id="waiting" style="grid-column: 1/-1; text-align: center; padding: 50px; color: #999;">
+            📡 กำลังรอข้อมูลจากเครื่องวัดในพื้นที่...
+        </div>
+    </div>
+
+    <footer style="margin-top: 50px; text-align: center; color: #bbb; font-size: 0.8rem;">
+        สร้างโดย โซเฟีย (Sophia) Oracle | ข้อมูลแบบ Real-time
+    </footer>
+</div>
+
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script>
+    const grid = document.getElementById('device-grid');
+    const dot = document.getElementById('dot');
+    const connText = document.getElementById('conn-text');
+    const waiting = document.getElementById('waiting');
+
+    const client = mqtt.connect('wss://dustboy-wss-bridge.laris.workers.dev/mqtt', {
+        clientId: 'sophia_thai_' + Math.random().toString(16).substr(2, 8)
+    });
+
+    client.on('connect', () => {
+        dot.classList.add('active');
+        connText.innerText = 'เชื่อมต่อสำเร็จ (ออนไลน์)';
+        client.subscribe('DUSTBOY/#');
+    });
+
+    client.on('message', (topic, payload) => {
+        const raw = payload.toString();
+        if (waiting) waiting.remove();
+
+        const parts = topic.split('/');
+        const id = parts[1] || 'ไม่ระบุ ID';
+        const nickname = parts[2] || 'เครื่องวัดฝุ่น';
+        const location = parts[3] || 'ไม่ระบุสถานที่';
+
+        let data = { pm25: "0", pm10: "-", temp: "-", hum: "-" };
+
+        // พยายามอ่านข้อมูลจาก JSON
+        try {
+            if (raw.includes('{')) {
+                const json = JSON.parse(raw);
+                data.pm25 = json.pm25 || json.pm2_5 || json.value || "0";
+                data.pm10 = json.pm10 || "-";
+                data.temp = json.temp || json.temperature || "-";
+                data.hum = json.hum || json.humidity || "-";
+            } else if (!isNaN(parseFloat(raw))) {
+                data.pm25 = parseFloat(raw).toFixed(1);
+            }
+        } catch(e) { data.pm25 = raw; }
+
+        updateCard(id, nickname, location, data);
+    });
+
+    function updateCard(id, name, loc, data) {
+        let card = document.getElementById('card-' + id);
+        if (!card) {
+            card = document.createElement('div');
+            card.id = 'card-' + id;
+            card.className = 'card';
+            grid.appendChild(card);
+        }
+
+        const val = parseFloat(data.pm25);
+        let color = '#3498db'; // ฟ้า (ปกติ)
+        let statusText = 'คุณภาพอากาศปานกลาง';
+        let advice = 'ทำกิจกรรมกลางแจ้งได้ปกติ';
+
+        if (!isNaN(val)) {
+            if (val <= 25) {
+                color = var(--safe); color = '#2ecc71';
+                statusText = 'อากาศดีมาก';
+                advice = 'สูดหายใจได้เต็มปอดเลยค่ะ 🌿';
+            } else if (val <= 50) {
+                color = '#f1c40f';
+                statusText = 'อากาศปานกลาง';
+                advice = 'เริ่มมีฝุ่นนิดหน่อยค่ะ';
+            } else {
+                color = '#e74c3c';
+                statusText = 'อากาศมีผลต่อสุขภาพ';
+                advice = 'ควรสวมหน้ากากอนามัยนะคะ 😷';
+            }
+        }
+
+        card.style.borderTopColor = color;
+
+        card.innerHTML = `
+            <div class="location-name">${name}</div>
+            <div class="device-id">สถานที่: ${loc} (ID: ${id})</div>
+            
+            <div class="pm-box" style="background: ${color}15;">
+                <div class="pm-label">ค่าฝุ่น PM2.5</div>
+                <div class="pm-value" style="color: ${color}">${data.pm25}</div>
+                <div class="pm-unit">ไมโครกรัม / ลูกบาศก์เมตร</div>
+            </div>
+
+            <div class="health-advice" style="color: ${color}; background: ${color}10;">
+                ${statusText}
+            </div>
+            <div style="text-align: center; font-size: 0.9rem; color: #666; margin-bottom: 15px;">
+                ${advice}
+            </div>
+
+            <div class="extra-data">
+                <div class="extra-item">
+                    <div class="extra-label">อุณหภูมิ</div>
+                    <div class="extra-val">${data.temp}°C</div>
+                </div>
+                <div class="extra-item">
+                    <div class="extra-label">ความชื้น</div>
+                    <div class="extra-val">${data.hum}%</div>
+                </div>
+                <div class="extra-item">
+                    <div class="extra-label">PM10</div>
+                    <div class="extra-val">${data.pm10}</div>
+                </div>
+            </div>
+
+            <div class="update-time">อัปเดตเมื่อ: ${new Date().toLocaleTimeString()}</div>
+        `;
+    }
+</script>
+
+</body>
+</html>

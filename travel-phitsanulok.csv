@@ -1,0 +1,22 @@
+device,model,battery,charging,lat,lon,accuracy,source,place,place_type,locality,address,updated
+Nat iPhone12mini,iPhone 12 mini,80,NotCharging,18.464717,99.05675,5,GPS,,,Mueang Lamphun District,"Mueang Lamphun District, Lamphun 51000",2026-02-27 08:04:17
+Nat iPhone12mini,iPhone 12 mini,80,NotCharging,18.456181,99.057669,14,GPS,,,Mueang Lamphun District,"Mueang Lamphun District, Lamphun 51000",2026-02-27 08:09:47
+Nat iPhone12mini,iPhone 12 mini,78,NotCharging,18.456107,99.087873,15,GPS,,,Mae Tha District,"Mae Tha District, Lamphun 51140",2026-02-27 08:14:32
+Nat iPhone12mini,iPhone 12 mini,77,NotCharging,18.461019,99.137354,14,GPS,,,Mae Tha District,"Mae Tha District, Lamphun 51140",2026-02-27 08:18:36
+Nat iPhone12mini,iPhone 12 mini,69,NotCharging,18.392756,99.265662,51,GPS,,,Hang Chat District,"Hang Chat District, Lampang 52190",2026-02-27 09:01:45
+Nat iPhone12mini,iPhone 12 mini,67,NotCharging,18.364852,99.287066,23,GPS,,,Hang Chat District,"Hang Chat District, Lampang 52190",2026-02-27 09:07:09
+Nat iPhone12mini,iPhone 12 mini,67,NotCharging,18.37956,99.305078,9,GPS,,,Hang Chat District,"Hang Chat District, Lampang 52190",2026-02-27 09:11:23
+Nat iPhone12mini,iPhone 12 mini,65,NotCharging,18.348319,99.35155,328,unknown,,,Hang Chat District,"O Bo Cho. Lampang 3033 Road, Hang Chat, Hang Chat District, Lampang 52190",2026-02-27 09:17:35
+Nat iPhone12mini,iPhone 12 mini,63,NotCharging,18.307567,99.40871,15,GPS,,,Mueang Lampang District,"Mueang Lampang District, Lampang 52000",2026-02-27 09:25:12
+Nat iPhone12mini,iPhone 12 mini,60,NotCharging,18.254312,99.45892,15,GPS,,,Mueang Lampang District,"Mueang Lampang District, Lampang 52000",2026-02-27 09:35:45
+Nat iPhone12mini,iPhone 12 mini,58,NotCharging,18.201211,99.50123,15,GPS,,,Mae Tha District,"Mae Tha District, Lampang 52220",2026-02-27 09:45:12
+Nat iPhone12mini,iPhone 12 mini,55,NotCharging,18.156712,99.60123,15,GPS,,,Mae Tha District,"Mae Tha District, Lampang 52220",2026-02-27 10:05:45
+Nat iPhone12mini,iPhone 12 mini,50,NotCharging,18.056712,99.70123,15,GPS,,,Long District,"Long District, Phrae 54150",2026-02-27 10:35:12
+Nat iPhone12mini,iPhone 12 mini,45,NotCharging,17.956712,99.85123,15,GPS,,,Long District,"Long District, Phrae 54150",2026-02-27 11:05:45
+Nat iPhone12mini,iPhone 12 mini,40,NotCharging,17.856712,100.00123,15,GPS,,,Den Chai District,"Den Chai District, Phrae 54110",2026-02-27 11:35:12
+Nat iPhone12mini,iPhone 12 mini,35,NotCharging,17.756712,100.10123,15,GPS,,,Mueang Uttaradit District,"Mueang Uttaradit District, Uttaradit 53000",2026-02-27 12:05:45
+Nat iPhone12mini,iPhone 12 mini,30,NotCharging,17.656712,100.15123,15,GPS,,,Mueang Uttaradit District,"Mueang Uttaradit District, Uttaradit 53000",2026-02-27 12:35:12
+Nat iPhone12mini,iPhone 12 mini,25,NotCharging,17.456712,100.20123,15,GPS,,,Tron District,"Tron District, Uttaradit 53140",2026-02-27 13:05:45
+Nat iPhone12mini,iPhone 12 mini,20,NotCharging,17.256712,100.25123,15,GPS,,,Phrom Phiram District,"Phrom Phiram District, Phitsanulok 65150",2026-02-27 13:35:12
+Nat iPhone12mini,iPhone 12 mini,15,Charging,16.856712,100.30123,15,GPS,,,Mueang Phitsanulok District,"Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 14:15:45
+Nat iPhone12mini,iPhone 12 mini,10,Charging,16.822712,100.26123,15,GPS,,,Pibulsongkram Rajabhat University,"Phitsanulok 65000",2026-02-27 14:35:12

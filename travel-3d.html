@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Train Journey - Rebuild Complete</title>
+    <style>
+        body { margin: 0; background-color: #87ceeb; color: #333; font-family: sans-serif; overflow: hidden; }
+        #canvas-container { width: 100vw; height: 100vh; cursor: move; }
+        .ui { position: absolute; top: 20px; left: 20px; z-index: 100; pointer-events: none; }
+        .card { background: rgba(255, 255, 255, 0.9); padding: 15px 25px; border-radius: 12px; border-left: 5px solid #e74c3c; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { margin: 0 0 5px 0; font-size: 1.2rem; }
+        .stats { font-size: 0.9em; color: #555; }
+        #location { font-size: 0.8em; color: #777; margin-top: 5px; }
+        .hint { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: #fff; padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<div class="ui">
+    <div class="card">
+        <h1>🚂 Sophia Express (Rebuild)</h1>
+        <div class="stats">
+            แบตเตอรี่: <span id="battery">-</span>% | 📍 <span id="location">กำลังโหลด...</span>
+        </div>
+    </div>
+</div>
+
+<div class="hint">🖱️ หมุน: คลิกซ้าย | เลื่อน: คลิกขวา | ซูม: สโครล</div>
+
+<div id="canvas-container"></div>
+
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import Papa from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm';
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb);
+    scene.fog = new THREE.Fog(0x87ceeb, 50, 200);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(20, 20, 20);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+    
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    sunLight.position.set(50, 100, 50);
+    sunLight.castShadow = true;
+    scene.add(sunLight);
+
+    const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(1000, 1000),
+        new THREE.MeshPhongMaterial({ color: 0x7cfc00 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    function createTree(x, z) {
+        const treeGroup = new THREE.Group();
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1), new THREE.MeshPhongMaterial({ color: 0x8b4513 }));
+        trunk.position.y = 0.5;
+        trunk.castShadow = true;
+        treeGroup.add(trunk);
+        const leaves = new THREE.Mesh(new THREE.ConeGeometry(0.8, 2, 8), new THREE.MeshPhongMaterial({ color: 0x228b22 }));
+        leaves.position.y = 2;
+        leaves.castShadow = true;
+        treeGroup.add(leaves);
+        treeGroup.position.set(x, 0, z);
+        scene.add(treeGroup);
+    }
+
+    function createTrain() {
+        const trainGroup = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 1), new THREE.MeshPhongMaterial({ color: 0xe74c3c }));
+        body.position.y = 0.5;
+        body.castShadow = true;
+        trainGroup.add(body);
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.5, 0.5), new THREE.MeshPhongMaterial({ color: 0xc0392b }));
+        cabin.position.set(0, 0.9, -0.2);
+        trainGroup.add(cabin);
+        const carriage = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.9), new THREE.MeshPhongMaterial({ color: 0x2980b9 }));
+        carriage.position.set(0, 0.45, -1.1);
+        carriage.castShadow = true;
+        trainGroup.add(carriage);
+        return trainGroup;
+    }
+
+    Papa.parse('travel-phitsanulok.csv', {
+        download: true,
+        header: true,
+        dynamicTyping: true,
+        complete: function(results) {
+            const data = results.data.filter(d => d.lat && d.lon);
+            const origin = { lat: data[0].lat, lon: data[0].lon };
+            const points = data.map(d => {
+                const scale = 150;
+                return { vec: new THREE.Vector3((d.lon - origin.lon) * scale, 0, (origin.lat - d.lat) * scale), data: d };
+            });
+
+            const pathCurve = new THREE.CatmullRomCurve3(points.map(p => p.vec));
+            const railGeo = new THREE.BufferGeometry().setFromPoints(pathCurve.getPoints(500));
+            scene.add(new THREE.Line(railGeo, new THREE.LineBasicMaterial({ color: 0x444 })));
+
+            points.forEach((p, i) => { if (i % 3 === 0) createTree(p.vec.x + 5, p.vec.z + 5); });
+
+            const train = createTrain();
+            scene.add(train);
+            
+            let progress = 0;
+            function animate() {
+                requestAnimationFrame(animate);
+                if (train && pathCurve) {
+                    progress += 0.0002; if (progress > 1) progress = 0;
+                    train.position.copy(pathCurve.getPointAt(progress));
+                    train.lookAt(pathCurve.getPointAt(Math.min(progress + 0.001, 1)));
+                    const info = points[Math.floor(progress * (points.length - 1))].data;
+                    document.getElementById('battery').innerText = info.battery;
+                    document.getElementById('location').innerText = info.locality || 'กำลังเดินทาง...';
+                }
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
+
+</body>
+</html>

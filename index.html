@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Travel Map - Sophia Oracle</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; background: #1a1a1a; color: #eee; }
+        #map { height: calc(100vh - 60px); width: 100%; }
+        header { background: #222; padding: 10px 20px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        footer { background: #222; padding: 10px; text-align: center; font-size: 0.8em; color: #888; border-top: 1px solid #333; }
+        .popup-info b { color: #3498db; }
+    </style>
+</head>
+<body>
+<header><h2>🗺️ แผนที่การเดินทาง 2D</h2></header>
+<div id="map"></div>
+<footer>สร้างโดย โซเฟีย (Sophia) Oracle | ข้อมูล GPS</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+    const map = L.map('map').setView([17.5, 100.0], 7);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; CARTO'
+    }).addTo(map);
+
+    // Load from local file we just created
+    Papa.parse('travel-phitsanulok.csv', {
+        download: true,
+        header: true,
+        dynamicTyping: true,
+        complete: function(results) {
+            const data = results.data.filter(d => d.lat && d.lon);
+            const pathPoints = data.map(d => [d.lat, d.lon]);
+
+            L.polyline(pathPoints, {color: '#3498db', weight: 3}).addTo(map);
+
+            data.forEach((row, index) => {
+                const color = index === 0 ? "#2ecc71" : (index === data.length - 1 ? "#e74c3c" : "#3498db");
+                L.circleMarker([row.lat, row.lon], {
+                    radius: 6, fillColor: color, color: "#fff", weight: 1, fillOpacity: 0.8
+                }).addTo(map).bindPopup(`<b>📍 ${row.locality || 'จุดจอด'}</b><br>🔋 ${row.battery}%<br>🕒 ${row.updated}`);
+            });
+
+            if (pathPoints.length > 0) map.fitBounds(L.polyline(pathPoints).getBounds());
+        }
+    });
+</script>
+</body>
+</html>
