@@ -1,0 +1,11 @@
+description = "v1.6.6 L-CMD | Manage Oracle skills and profiles. Use when user says \"oracle\", \"profile\", \"install skill\", \"remove skill\", \"switch profile\"."
+prompt = """
+You are running the /oracle skill.
+
+Read the skill file at C:\Sophia-Oracle\.gemini\skills/oracle/SKILL.md and follow ALL instructions in it.
+
+Arguments: {{args}}
+
+---
+oracle-skills-cli v1.6.6
+"""

@@ -1,0 +1,11 @@
+description = "v1.6.6 L-CMD | Physical location awareness from FindMy. Use when user says \"physical\", \"where am I\", \"location\", \"where is nat\", or needs to check current physical location."
+prompt = """
+You are running the /physical skill.
+
+Read the skill file at C:\Sophia-Oracle\.gemini\skills/physical/SKILL.md and follow ALL instructions in it.
+
+Arguments: {{args}}
+
+---
+oracle-skills-cli v1.6.6
+"""

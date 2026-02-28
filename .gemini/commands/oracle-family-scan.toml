@@ -1,0 +1,11 @@
+description = "v1.6.6 L-CMD | Manage Oracle family - scan, track, welcome new Oracles. Use when user says \"family scan\", \"oracle registry\", \"welcome new oracles\", or needs to check Oracle population."
+prompt = """
+You are running the /oracle-family-scan skill.
+
+Read the skill file at C:\Sophia-Oracle\.gemini\skills/oracle-family-scan/SKILL.md and follow ALL instructions in it.
+
+Arguments: {{args}}
+
+---
+oracle-skills-cli v1.6.6
+"""

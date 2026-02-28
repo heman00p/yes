@@ -1,0 +1,11 @@
+description = "v1.6.6 L-CMD | Create handoff + enter plan mode for next session. Use when user says \"forward\", \"handoff\", \"wrap up\", or before ending session."
+prompt = """
+You are running the /forward skill.
+
+Read the skill file at C:\Sophia-Oracle\.gemini\skills/forward/SKILL.md and follow ALL instructions in it.
+
+Arguments: {{args}}
+
+---
+oracle-skills-cli v1.6.6
+"""

@@ -1,0 +1,11 @@
+description = "v1.6.6 L-CMD | Control Gemini via MQTT WebSocket. Use when user says \"gemini\", needs to send messages to Gemini, or control the Gemini browser tab."
+prompt = """
+You are running the /gemini skill.
+
+Read the skill file at C:\Sophia-Oracle\.gemini\skills/gemini/SKILL.md and follow ALL instructions in it.
+
+Arguments: {{args}}
+
+---
+oracle-skills-cli v1.6.6
+"""

@@ -1,0 +1,11 @@
+description = "v1.6.6 L-CMD | Sync Oracle instruments with the family. Check and update skills to latest version. Use when user says \"soul-sync\", \"sync\", \"calibrate\", \"update\", or before /awaken."
+prompt = """
+You are running the /oracle-soul-sync-update skill.
+
+Read the skill file at C:\Sophia-Oracle\.gemini\skills/oracle-soul-sync-update/SKILL.md and follow ALL instructions in it.
+
+Arguments: {{args}}
+
+---
+oracle-skills-cli v1.6.6
+"""

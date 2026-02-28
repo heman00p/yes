@@ -1,0 +1,11 @@
+description = "v1.6.6 L-CMD | Know ourselves - show identity, model info, session stats, and Oracle philosophy. Use when user asks \"who are you\", \"who\", \"who we are\", or wants to check current AI identity."
+prompt = """
+You are running the /who-are-you skill.
+
+Read the skill file at C:\Sophia-Oracle\.gemini\skills/who-are-you/SKILL.md and follow ALL instructions in it.
+
+Arguments: {{args}}
+
+---
+oracle-skills-cli v1.6.6
+"""

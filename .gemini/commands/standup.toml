@@ -1,0 +1,11 @@
+description = "v1.6.6 L-CMD | Daily standup check - pending tasks, appointments, recent progress. Use when user says \"standup\", \"morning check\", \"what's pending\"."
+prompt = """
+You are running the /standup skill.
+
+Read the skill file at C:\Sophia-Oracle\.gemini\skills/standup/SKILL.md and follow ALL instructions in it.
+
+Arguments: {{args}}
+
+---
+oracle-skills-cli v1.6.6
+"""

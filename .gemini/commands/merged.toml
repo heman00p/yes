@@ -1,0 +1,11 @@
+description = "v1.6.6 L-CMD | Post-Merge Cleanup. Switch to main, pull latest, delete merged branch. Use after PR is merged."
+prompt = """
+You are running the /merged skill.
+
+Read the skill file at C:\Sophia-Oracle\.gemini\skills/merged/SKILL.md and follow ALL instructions in it.
+
+Arguments: {{args}}
+
+---
+oracle-skills-cli v1.6.6
+"""

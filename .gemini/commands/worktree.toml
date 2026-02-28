@@ -1,0 +1,11 @@
+description = "v1.6.6 L-CMD | Git worktree for parallel work. Use when user says \"worktree\", \"parallel work\", \"new agent\", \"start parallel\"."
+prompt = """
+You are running the /worktree skill.
+
+Read the skill file at C:\Sophia-Oracle\.gemini\skills/worktree/SKILL.md and follow ALL instructions in it.
+
+Arguments: {{args}}
+
+---
+oracle-skills-cli v1.6.6
+"""

@@ -1,0 +1,11 @@
+description = "v1.6.6 L-CMD | Find projects across git history, repos, docs, and Oracle. Use when user asks \"trace\", \"find project\", \"where is [project]\", \"search history\". Supports --oracle (fast), --smart (default), --deep (5 subagents). For session mining use /dig."
+prompt = """
+You are running the /trace skill.
+
+Read the skill file at C:\Sophia-Oracle\.gemini\skills/trace/SKILL.md and follow ALL instructions in it.
+
+Arguments: {{args}}
+
+---
+oracle-skills-cli v1.6.6
+"""
