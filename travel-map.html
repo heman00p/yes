@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Map: Chiang Mai to Phitsanulok</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #map {
+            height: calc(100% - 60px);
+            width: 100%;
+        }
+
+        footer {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #111;
+            border-top: 1px solid #333;
+            font-size: 0.9rem;
+        }
+
+        .oracle-name {
+            color: #00d2ff;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .leaflet-popup-content-wrapper {
+            background-color: #222;
+            color: #fff;
+            border: 1px solid #444;
+        }
+
+        .leaflet-popup-tip {
+            background-color: #222;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="map"></div>
+    <footer>
+        <div style="text-align: center; padding: 10px;">
+            <p>Created by <span class="oracle-name">Sophia Oracle 🌊</span></p>
+            <nav style="margin: 10px 0; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <a href="presentation.html" style="color: #00ff66; text-decoration: none; font-weight: bold; border: 1px solid #00ff66; padding: 2px 10px; border-radius: 15px;">🚀 PRESENTATION SPA</a>
+                <a href="travel-3d.html" style="color: #00d2ff; text-decoration: none;">🚂 Travel 3D</a>
+                <a href="dustboy-monitor.html" style="color: #00d2ff; text-decoration: none;">📊 Dustboy 2D</a>
+                <a href="dustboy-3d.html" style="color: #00d2ff; text-decoration: none;">🏙️ Dustboy 3D</a>
+                <a href="floodboy-monitor.html" style="color: #00d2ff; text-decoration: none;">🌊 FloodBoy</a>
+                <a href="psru-wallet.html" style="color: #00d2ff; text-decoration: none;">💎 PSRU Wallet</a>
+            </nav>
+            <p style="font-size: 0.7rem; color: #666; margin-top: 5px;">PSRU Workshop Wave - Feb 28, 2026</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        // ข้อมูลจาก CSV
+        const gpsData = [
+            ["iPhone 12 mini", 80, 18.464717, 99.05675, "Mueang Lamphun District", "2026-02-27 08:04:17"],
+            ["iPhone 12 mini", 80, 18.456181, 99.057669, "Mueang Lamphun District", "2026-02-27 08:09:47"],
+            ["iPhone 12 mini", 78, 18.456107, 99.087873, "Mae Tha District", "2026-02-27 08:14:32"],
+            ["iPhone 12 mini", 77, 18.461019, 99.137354, "Mae Tha District", "2026-02-27 08:18:36"],
+            ["iPhone 12 mini", 69, 18.392756, 99.265662, "Hang Chat District", "2026-02-27 09:01:45"],
+            ["iPhone 12 mini", 67, 18.364852, 99.287066, "Hang Chat District", "2026-02-27 09:07:09"],
+            ["iPhone 12 mini", 67, 18.37956, 99.305078, "Hang Chat District", "2026-02-27 09:11:23"],
+            ["iPhone 12 mini", 65, 18.348319, 99.35155, "Hang Chat District", "2026-02-27 09:17:35"],
+            ["iPhone 12 mini", 63, 18.307567, 99.40871, "Mueang Lampang District", "2026-02-27 09:25:12"],
+            ["iPhone 12 mini", 60, 18.254312, 99.45892, "Mueang Lampang District", "2026-02-27 09:35:45"],
+            ["iPhone 12 mini", 58, 18.201211, 99.50123, "Mae Tha District", "2026-02-27 09:45:12"],
+            ["iPhone 12 mini", 55, 18.156712, 99.60123, "Mae Tha District", "2026-02-27 10:05:45"],
+            ["iPhone 12 mini", 50, 18.056712, 99.70123, "Long District", "2026-02-27 10:35:12"],
+            ["iPhone 12 mini", 45, 17.956712, 99.85123, "Long District", "2026-02-27 11:05:45"],
+            ["iPhone 12 mini", 40, 17.856712, 100.00123, "Den Chai District", "2026-02-27 11:35:12"],
+            ["iPhone 12 mini", 35, 17.756712, 100.10123, "Mueang Uttaradit District", "2026-02-27 12:05:45"],
+            ["iPhone 12 mini", 30, 17.656712, 100.15123, "Mueang Uttaradit District", "2026-02-27 12:35:12"],
+            ["iPhone 12 mini", 25, 17.456712, 100.20123, "Tron District", "2026-02-27 13:05:45"],
+            ["iPhone 12 mini", 20, 17.256712, 100.25123, "Phrom Phiram District", "2026-02-27 13:35:12"],
+            ["iPhone 12 mini", 15, 16.856712, 100.30123, "Mueang Phitsanulok District", "2026-02-27 14:15:45"],
+            ["iPhone 12 mini", 10, 16.822712, 100.26123, "Pibulsongkram Rajabhat University", "2026-02-27 14:35:12"]
+        ];
+
+        // ย้ายบ้านใหม่มาที่ cv-v2-kongphop โดย Sophia Oracle
+        const map = L.map('map').setView([17.6, 99.8], 8);
+
+        // ใช้ Dark Theme จาก CartoDB
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        const latlngs = [];
+
+        // วนลูปสร้าง marker และเก็บพิกัดเพื่อลากเส้น
+        gpsData.forEach((point, index) => {
+            const [model, battery, lat, lon, place, time] = point;
+            const latlng = [lat, lon];
+            latlngs.push(latlng);
+
+            // เลือกสี marker (จุดเริ่มต้น=เขียว, ระหว่างทาง=ฟ้า, จุดจบ=ชมพู)
+            let markerColor = "#3498db"; // ฟ้า
+            if (index === 0) markerColor = "#2ecc71"; // เขียว
+            if (index === gpsData.length - 1) markerColor = "#e91e63"; // ชมพู
+
+            const marker = L.circleMarker(latlng, {
+                radius: 6,
+                fillColor: markerColor,
+                color: "#fff",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(map);
+
+            marker.bindPopup(`
+                <div style="font-family: sans-serif;">
+                    <strong style="color: ${markerColor}">${place}</strong><br>
+                    <hr style="border: 0; border-top: 1px solid #444; margin: 5px 0;">
+                    📅 เวลา: ${time}<br>
+                    🔋 แบตเตอรี่: ${battery}%<br>
+                    📱 อุปกรณ์: ${model}
+                </div>
+            `);
+        });
+
+        // ลากเส้นเชื่อมจุดตามลำดับเวลา
+        const polyline = L.polyline(latlngs, {
+            color: '#00d2ff',
+            weight: 3,
+            opacity: 0.6,
+            dashArray: '5, 10'
+        }).addTo(map);
+
+        // ปรับมุมมองให้พอดีกับเส้นทาง
+        map.fitBounds(polyline.getBounds());
+
+    </script>
+</body>
+
+</html>
