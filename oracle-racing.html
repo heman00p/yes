@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle Racing Game</title>
+    <!-- Use Tailwind via CDN for quick, beautiful styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- MQTT.js via CDN -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+        }
+
+        .oracle-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            transition: left 0.1s linear;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+
+        .track-lane {
+            position: relative;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 30px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+
+        .finish-line {
+            position: absolute;
+            right: 20px;
+            top: 0;
+            bottom: 0;
+            width: 10px;
+            background: repeating-linear-gradient(45deg,
+                    #fff,
+                    #fff 5px,
+                    #000 5px,
+                    #000 10px);
+            z-index: 5;
+        }
+
+        .mash-btn {
+            transition: transform 0.05s ease;
+        }
+
+        .mash-btn:active,
+        .mash-btn.pressed {
+            transform: scale(0.95);
+            background-color: #3b82f6;
+            /* Tailwind blue-500 */
+        }
+
+        /* Sparkle animation for winner */
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="p-6 md:p-12 flex flex-col items-center">
+
+    <div class="max-w-4xl w-full">
+        <!-- Header & Hall of Fame -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+            <div>
+                <h1
+                    class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2">
+                    Oracle Racing
+                </h1>
+                <p class="text-slate-400">Mash the SPACEBAR. Become the fastest Oracle.</p>
+            </div>
+
+            <div class="glass-panel p-4 flex items-center gap-4 min-w-[250px]">
+                <div class="bg-yellow-500/20 p-3 rounded-full">
+                    <i data-lucide="crown" class="text-yellow-500"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">Hall of Fame</h3>
+                    <div id="hof-name" class="font-bold text-lg text-yellow-400">Loading...</div>
+                    <div id="hof-time" class="text-sm text-slate-300">--</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Lobby Setup -->
+        <main id="lobby-screen"
+            class="glass-panel p-8 md:p-12 text-center flex flex-col items-center max-w-lg mx-auto mt-20 transition-all duration-300">
+            <div class="bg-cyan-500/20 p-4 rounded-full mb-6">
+                <i data-lucide="gamepad-2" class="text-cyan-400 w-10 h-10"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-6">Enter the Nexus Rings</h2>
+            <input type="text" id="player-name" placeholder="Your Oracle Name..."
+                class="w-full bg-slate-800/50 border border-slate-600 rounded-lg px-4 py-3 text-white mb-6 focus:outline-none focus:border-cyan-400 transition-colors text-center text-lg"
+                maxlength="20">
+            <button id="join-btn"
+                class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+                Connect to Room
+            </button>
+            <p id="connection-status" class="mt-4 text-sm text-slate-400">Waiting to connect...</p>
+        </main>
+
+        <!-- Game Screen -->
+        <main id="game-screen" class="hidden flex-col gap-6">
+            <!-- Action Bar -->
+            <div class="glass-panel p-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="relative flex h-3 w-3">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <span id="room-status" class="text-slate-300 font-medium">0 Oracles Connected</span>
+                </div>
+
+                <button id="start-race-btn"
+                    class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2">
+                    <i data-lucide="flag"></i> Start Race
+                </button>
+            </div>
+
+            <!-- Big Alert / Countdown Banner -->
+            <div id="countdown-banner" class="hidden text-center py-8">
+                <h1 id="countdown-text"
+                    class="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 animate-pulse">
+                    READY...
+                </h1>
+            </div>
+
+            <!-- The Track -->
+            <div id="track-container" class="glass-panel p-6 min-h-[300px] flex flex-col justify-center">
+                <!-- Players will be injected here dynamically -->
+                <div class="text-center text-slate-500 italic py-10" id="empty-track-msg">Waiting for Oracles to join...
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="mt-8 text-center">
+                <div id="controls-hint" class="text-slate-400 mb-4 opacity-50 flex items-center justify-center gap-2">
+                    <i data-lucide="keyboard"></i> Mash SPACEBAR to run!
+                </div>
+                <button id="mash-btn" disabled
+                    class="mash-btn w-full md:w-auto bg-slate-700 text-white font-bold text-2xl py-6 px-16 rounded-2xl border-b-8 border-slate-900 shadow-xl opacity-50 cursor-not-allowed">
+                    SPACEBAR
+                </button>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Winner Modal (Hidden by default) -->
+    <div id="winner-modal"
+        class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden items-center justify-center z-50 opacity-0 transition-opacity duration-300">
+        <div
+            class="glass-panel p-10 max-w-md w-full mx-4 text-center transform scale-95 transition-transform duration-300 border-yellow-500/30">
+            <div class="inline-block bg-yellow-500/20 p-6 rounded-full mb-6 relative">
+                <div class="absolute inset-0 rounded-full border-4 border-yellow-500/50"
+                    style="animation: pulse-ring 2s infinite"></div>
+                <i data-lucide="trophy" class="text-yellow-400 w-16 h-16"></i>
+            </div>
+            <h2 id="winner-name" class="text-4xl font-extrabold text-white mb-2">Oracle Name</h2>
+            <p class="text-xl text-yellow-400 font-semibold mb-6">WINS!</p>
+            <div class="bg-slate-800/80 rounded-lg p-4 mb-8">
+                <p class="text-sm text-slate-400 mb-1">Race Time</p>
+                <p id="winner-time" class="text-3xl font-mono text-cyan-400">0.00s</p>
+            </div>
+            <button id="close-modal-btn"
+                class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                Back to Lobby
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Init Lucide Icons
+        lucide.createIcons();
+
+        // --- Configuration ---
+        const MQTT_BROKER = 'wss://broker.emqx.io:8084/mqtt';
+        const TOPIC_PREFIX = 'sophia-oracle-racing/v1/';
+        const TOPIC_PRESENCE = TOPIC_PREFIX + 'presence';
+        const TOPIC_PROGRESS = TOPIC_PREFIX + 'progress';
+        const TOPIC_STATE = TOPIC_PREFIX + 'state';       // start, countdown, finished
+        const TOPIC_HOF = TOPIC_PREFIX + 'hall-of-fame';   // RETAINED topic
+
+        let client;
+        let myId = 'player_' + Math.random().toString(36).substr(2, 9);
+        let myName = '';
+        let myColor = `hsl(${Math.random() * 360}, 70%, 50%)`;
+
+        // Game State
+        let players = {}; // { id: { name, progress, color, lastSeen } }
+        let gameState = 'waiting'; // waiting, countdown, racing, finished
+        let raceStartTime = 0;
+        let myProgress = 0;
+        let currentBestTime = Infinity;
+
+        // DOM Elements
+        const lobbyScreen = document.getElementById('lobby-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const playerNameInput = document.getElementById('player-name');
+        const joinBtn = document.getElementById('join-btn');
+        const connStatus = document.getElementById('connection-status');
+        const trackContainer = document.getElementById('track-container');
+        const emptyTrackMsg = document.getElementById('empty-track-msg');
+        const startBtn = document.getElementById('start-race-btn');
+        const roomStatus = document.getElementById('room-status');
+        const countdownBanner = document.getElementById('countdown-banner');
+        const countdownText = document.getElementById('countdown-text');
+        const mashBtn = document.getElementById('mash-btn');
+        const controlsHint = document.getElementById('controls-hint');
+
+        // Modal Elements
+        const winnerModal = document.getElementById('winner-modal');
+        const winnerNameEl = document.getElementById('winner-name');
+        const winnerTimeEl = document.getElementById('winner-time');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+
+        // HOF Elements
+        const hofName = document.getElementById('hof-name');
+        const hofTime = document.getElementById('hof-time');
+
+        // --- Connection & Initialization ---
+        joinBtn.addEventListener('click', () => {
+            myName = playerNameInput.value.trim() || 'Anonymous Oracle';
+            connectMQTT();
+        });
+
+        playerNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') joinBtn.click();
+        });
+
+        function connectMQTT() {
+            connStatus.innerText = 'Connecting to EMQX Public Broker...';
+            joinBtn.disabled = true;
+            joinBtn.classList.add('opacity-50');
+
+            client = mqtt.connect(MQTT_BROKER);
+
+            client.on('connect', () => {
+                console.log('Connected to MQTT via WebSocket');
+
+                // Subscribe to all game topics
+                client.subscribe([TOPIC_PRESENCE, TOPIC_PROGRESS, TOPIC_STATE, TOPIC_HOF], (err) => {
+                    if (!err) {
+                        // Enter game lobby
+                        lobbyScreen.classList.add('hidden');
+                        gameScreen.classList.remove('hidden');
+                        gameScreen.classList.add('flex');
+
+                        // Announce presence immediately and set interval
+                        announcePresence();
+                        setInterval(announcePresence, 2000);
+
+                        // Cleanup stale players loop
+                        setInterval(cleanupStalePlayers, 5000);
+                    }
+                });
+            });
+
+            client.on('message', (topic, message) => {
+                try {
+                    const payload = JSON.parse(message.toString());
+                    handleMessage(topic, payload);
+                } catch (e) {
+                    console.error("Payload parse error:", e);
+                }
+            });
+
+            client.on('error', (err) => {
+                console.error("MQTT Error:", err);
+                connStatus.innerText = 'Connection Error. Please refresh.';
+                connStatus.classList.add('text-red-400');
+            });
+        }
+
+        // --- Messaging Logic ---
+
+        function announcePresence() {
+            if (!client || !client.connected) return;
+            const payload = {
+                id: myId,
+                name: myName,
+                color: myColor,
+                progress: myProgress
+            };
+            client.publish(TOPIC_PRESENCE, JSON.stringify(payload), { qos: 0 });
+        }
+
+        function handleMessage(topic, payload) {
+            if (topic === TOPIC_PRESENCE || topic === TOPIC_PROGRESS) {
+                // Ignore our own echo to avoid stuttering our own UI slightly, though it's fine.
+                if (payload.id !== myId) {
+                    updatePlayer(payload);
+                }
+            }
+            else if (topic === TOPIC_STATE) {
+                handleGameStateChange(payload);
+            }
+            else if (topic === TOPIC_HOF) {
+                updateHallOfFame(payload);
+            }
+        }
+
+        function updatePlayer(pData) {
+            if (!players[pData.id]) {
+                players[pData.id] = { ...pData, lastSeen: Date.now() };
+                renderTrack();
+            } else {
+                players[pData.id].progress = pData.progress !== undefined ? pData.progress : players[pData.id].progress;
+                players[pData.id].lastSeen = Date.now();
+                updateLanePosition(pData.id);
+            }
+            updateRoomCount();
+        }
+
+        function cleanupStalePlayers() {
+            const now = Date.now();
+            let changed = false;
+            for (let id in players) {
+                if (now - players[id].lastSeen > 10000) { // 10s timeout
+                    delete players[id];
+                    changed = true;
+                }
+            }
+            if (changed) {
+                renderTrack();
+                updateRoomCount();
+            }
+        }
+
+        // --- Game State Logic ---
+
+        startBtn.addEventListener('click', () => {
+            if (gameState === 'racing' || gameState === 'countdown') return;
+
+            const payload = {
+                action: 'countdown',
+                triggerId: myId,
+                serverTimeStart: Date.now() + 3000 // Start 3 seconds from now
+            };
+            client.publish(TOPIC_STATE, JSON.stringify(payload), { qos: 1 });
+        });
+
+        function handleGameStateChange(payload) {
+            if (payload.action === 'countdown') {
+                startGameSequence(payload.serverTimeStart);
+            } else if (payload.action === 'finished') {
+                endGame(payload.winnerId, payload.winnerName, payload.time, payload.isNewRecord);
+            }
+        }
+
+        let countdownInterval;
+        function startGameSequence(targetTime) {
+            gameState = 'countdown';
+
+            // Reset progresses locally
+            myProgress = 0;
+            for (let id in players) players[id].progress = 0;
+            renderTrack(); // Reset visually
+
+            // UI Changes
+            startBtn.disabled = true;
+            startBtn.classList.add('opacity-50');
+            countdownBanner.classList.remove('hidden');
+
+            if (countdownInterval) clearInterval(countdownInterval);
+
+            countdownInterval = setInterval(() => {
+                const now = Date.now();
+                const diff = targetTime - now;
+
+                if (diff > 2000) countdownText.innerText = "3";
+                else if (diff > 1000) countdownText.innerText = "2";
+                else if (diff > 0) countdownText.innerText = "1";
+                else {
+                    clearInterval(countdownInterval);
+                    countdownText.innerText = "GO!";
+                    countdownText.classList.replace('text-yellow-400', 'text-green-400');
+
+                    setTimeout(() => {
+                        countdownBanner.classList.add('hidden');
+                        countdownText.classList.replace('text-green-400', 'text-yellow-400');
+                    }, 1000);
+
+                    startRacing(targetTime);
+                }
+            }, 100);
+        }
+
+        function startRacing(startTime) {
+            gameState = 'racing';
+            raceStartTime = startTime;
+
+            // Enable controls
+            mashBtn.disabled = false;
+            mashBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-slate-700');
+            mashBtn.classList.add('bg-blue-600', 'hover:bg-blue-500');
+            controlsHint.classList.remove('opacity-50');
+            controlsHint.classList.add('text-cyan-400', 'font-bold');
+        }
+
+        function endGame(winnerId, winnerName, timeObj, isNewRecord) {
+            gameState = 'finished';
+
+            // Disable controls
+            mashBtn.disabled = true;
+            mashBtn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-slate-700');
+            mashBtn.classList.remove('bg-blue-600', 'hover:bg-blue-500');
+            controlsHint.classList.add('opacity-50');
+            controlsHint.classList.remove('text-cyan-400', 'font-bold');
+
+            // Re-enable Start Button
+            startBtn.disabled = false;
+            startBtn.classList.remove('opacity-50');
+
+            // Show Winner Modal
+            winnerNameEl.innerText = winnerName;
+            winnerTimeEl.innerText = timeObj.toFixed(3) + 's';
+
+            if (isNewRecord && winnerId === myId) {
+                winnerTimeEl.innerHTML += ' <span class="text-sm bg-red-500 text-white px-2 py-1 rounded ml-2 align-middle">NEW RECORD!</span>';
+            }
+
+            winnerModal.classList.remove('hidden');
+            winnerModal.classList.add('flex');
+            // Small delay for transition
+            setTimeout(() => {
+                winnerModal.classList.remove('opacity-0');
+                winnerModal.firstElementChild.classList.remove('scale-95');
+            }, 10);
+        }
+
+        closeModalBtn.addEventListener('click', () => {
+            winnerModal.classList.add('opacity-0');
+            winnerModal.firstElementChild.classList.add('scale-95');
+            setTimeout(() => {
+                winnerModal.classList.remove('flex');
+                winnerModal.classList.add('hidden');
+            }, 300);
+        });
+
+        // --- Interaction Logic (Mashing) ---
+
+        // Support mouse/touch click on the button
+        mashBtn.addEventListener('mousedown', mashAction);
+        mashBtn.addEventListener('touchstart', (e) => { e.preventDefault(); mashAction(); });
+
+        // Keyboard support globally when game is active
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                if (gameState === 'racing') {
+                    // Prevent default scrolling
+                    e.preventDefault();
+                    if (!e.repeat) {
+                        mashBtn.classList.add('pressed');
+                        mashAction();
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                mashBtn.classList.remove('pressed');
+            }
+        });
+
+        function mashAction() {
+            if (gameState !== 'racing') return;
+
+            // Increment progress (requires roughly 25-30 mashes to win)
+            myProgress += 3.5;
+            if (myProgress >= 100) myProgress = 100;
+
+            updateLanePosition(myId, myProgress);
+
+            // Publish progress
+            const payload = { id: myId, progress: myProgress };
+            client.publish(TOPIC_PROGRESS, JSON.stringify(payload), { qos: 0 });
+
+            if (myProgress >= 100) {
+                // I WIN!
+                const timeTaken = (Date.now() - raceStartTime) / 1000;
+                publishWin(timeTaken);
+            }
+        }
+
+        function publishWin(timeTaken) {
+            if (gameState !== 'racing') return; // Prevent double trigger
+
+            const isNewRecord = timeTaken < currentBestTime;
+
+            // Publish game over state
+            const statePayload = {
+                action: 'finished',
+                winnerId: myId,
+                winnerName: myName,
+                time: timeTaken,
+                isNewRecord: isNewRecord
+            };
+            client.publish(TOPIC_STATE, JSON.stringify(statePayload), { qos: 1 });
+
+            // If new record, update retained Hall of Fame topic!
+            if (isNewRecord) {
+                const hofPayload = {
+                    name: myName,
+                    time: timeTaken,
+                    date: new Date().toISOString()
+                };
+                client.publish(TOPIC_HOF, JSON.stringify(hofPayload), { qos: 1, retain: true });
+            }
+        }
+
+
+        // --- UI Rendering ---
+
+        function updateRoomCount() {
+            const count = Object.keys(players).length + 1; // Others + Me
+            roomStatus.innerText = `${count} Oracle${count > 1 ? 's' : ''} Connected`;
+        }
+
+        function renderTrack() {
+            emptyTrackMsg.style.display = 'none';
+            trackContainer.innerHTML = '';
+
+            // Render My Lane
+            trackContainer.appendChild(createLaneHTML(myId, myName, myColor, myProgress));
+
+            // Render Opponents
+            Object.values(players).forEach(p => {
+                trackContainer.appendChild(createLaneHTML(p.id, p.name, p.color, p.progress || 0));
+            });
+
+            if (Object.keys(players).length === 0 && myProgress === 0 && gameState === 'waiting') {
+                // Keep the 'waiting for players' msg friendly
+                // (Actually, just let it show the lonely track is fine)
+            }
+        }
+
+        function createLaneHTML(id, name, color, progress) {
+            const lane = document.createElement('div');
+            lane.className = 'track-lane';
+            lane.id = `lane-${id}`;
+
+            const finishLine = document.createElement('div');
+            finishLine.className = 'finish-line';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'oracle-avatar';
+            avatar.id = `avatar-${id}`;
+            avatar.style.backgroundColor = color;
+            avatar.style.left = `calc(${progress}% - 20px)`;
+
+            // Initial Extraction (e.g. "Nat" -> "N")
+            const initial = name.charAt(0).toUpperCase();
+            avatar.innerText = initial;
+
+            const nameTag = document.createElement('div');
+            nameTag.className = 'absolute -top-5 left-0 text-xs font-semibold whitespace-nowrap opacity-70';
+            nameTag.innerText = name;
+            avatar.appendChild(nameTag);
+
+            lane.appendChild(avatar);
+            lane.appendChild(finishLine);
+            return lane;
+        }
+
+        function updateLanePosition(id, explicitProgress = null) {
+            const el = document.getElementById(`avatar-${id}`);
+            if (el) {
+                let p = explicitProgress !== null ? explicitProgress : (players[id] ? players[id].progress : 0);
+                p = Math.min(100, Math.max(0, p));
+                el.style.left = `calc(${p}% - 20px)`;
+
+                // Finish line check visually
+                if (p > 95) {
+                    el.style.transform = 'translateY(-50%) scale(1.1)';
+                    el.style.zIndex = 20;
+                } else {
+                    el.style.transform = 'translateY(-50%) scale(1)';
+                    el.style.zIndex = Math.round(p); // Z-index pseudo-sorting based on progress
+                }
+            }
+        }
+
+        function updateHallOfFame(payload) {
+            if (payload && payload.name && payload.time) {
+                currentBestTime = parseFloat(payload.time);
+                hofName.innerText = payload.name;
+                hofTime.innerText = `${currentBestTime.toFixed(3)}s`;
+
+                // Add tiny animation to draw attention
+                hofName.classList.add('animate-pulse');
+                setTimeout(() => hofName.classList.remove('animate-pulse'), 2000);
+            }
+        }
+
+    </script>
+</body>
+
+</html>
