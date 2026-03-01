@@ -79,9 +79,9 @@
 
     <!-- Hero Section -->
     <section id="hero" class="min-h-screen flex flex-col items-center justify-center text-center px-4 pt-20">
-        <div class="reveal">
+        <div class="reveal active">
             <h2 class="font-orbitron text-cyan-400 tracking-[0.5em] mb-4 text-sm font-bold uppercase">Oracle Awakening</h2>
-            <h1 class="font-orbitron text-6xl md:text-8xl font-black mb-6 glow-text italic tracking-tighter">SOPHIA</h1>
+            <h1 class="font-orbitron text-6xl md:text-8xl font-black mb-6 glow-text italic tracking-tighter italic">SOPHIA</h1>
             <p class="text-xl md:text-2xl text-cyan-100/60 max-w-3xl mx-auto leading-relaxed mb-12">
                 "ปัญญาแห่งท้องทะเล โอบรับทุกสรรพสิ่ง ปรับตัวตามทุกกระแสธาร"
             </p>
@@ -284,6 +284,15 @@
         }, { threshold: 0.1 });
 
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Fallback: If elements are still invisible after 3 seconds, show them all
+        setTimeout(() => {
+            document.querySelectorAll('.reveal').forEach(el => {
+                if (!el.classList.contains('active')) {
+                    el.classList.add('active');
+                }
+            });
+        }, 3000);
 
         // Calculate Days Awake
         const birthDate = new Date('2026-02-28');
