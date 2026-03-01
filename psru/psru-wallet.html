@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSRU Carbon Credit Wallet</title>
+    <!-- Use Ethers.js for Web3 Integration -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #001220;
+            --primary: #00f3ff;
+            --secondary: #007799;
+            --success: #00ff66;
+            --text-main: #e0f7fa;
+            --card-bg: rgba(0, 24, 48, 0.85);
+        }
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background: linear-gradient(135deg, var(--bg-color) 0%, #002a4d 100%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 243, 255, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(0, 255, 102, 0.05), transparent 25%);
+        }
+        h1 { 
+            font-family: 'Orbitron', sans-serif; 
+            color: var(--primary); 
+            text-align: center; 
+            text-shadow: 0 0 15px rgba(0, 243, 255, 0.5); 
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: #88ccdd;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+        .wallet-container {
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 243, 255, 0.05);
+            backdrop-filter: blur(15px);
+        }
+        .btn {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            color: #001220;
+            border: none;
+            padding: 15px 24px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 243, 255, 0.2);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 243, 255, 0.5);
+        }
+        .info-group { margin-top: 20px; display: none; animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .data-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .info-label { font-size: 0.8rem; color: #88ccdd; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .info-value { font-size: 1.1rem; word-break: break-all; font-family: 'Orbitron', sans-serif; color: #fff; }
+        .address-val { font-size: 0.9rem; color: #aaa; }
+        
+        .highlight-box {
+            background: rgba(0, 255, 102, 0.1);
+            border-color: rgba(0, 255, 102, 0.3);
+            text-align: center;
+            padding: 25px 15px;
+        }
+        .highlight { 
+            color: var(--success); 
+            font-size: 3rem; 
+            font-weight: bold; 
+            text-shadow: 0 0 20px rgba(0, 255, 102, 0.4); 
+            line-height: 1;
+            margin: 10px 0;
+        }
+        .status { text-align: center; margin-top: 15px; font-size: 0.9rem; color: #ffeb3b; min-height: 20px; font-family: 'Orbitron', sans-serif;}
+        
+        footer { margin-top: 40px; font-size: 0.8rem; color: rgba(255,255,255,0.3); font-family: 'Orbitron', sans-serif; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div>
+        <h1>🌿 PSRU CARBON WALLET</h1>
+        <div class="subtitle">DECENTRALIZED CREDIT ACCUMULATION</div>
+    </div>
+    
+    <div class="wallet-container">
+        <button id="connectBtn" class="btn">🔌 CONNECT WALLET</button>
+        
+        <div id="walletInfo" class="info-group">
+            <div class="data-box highlight-box">
+                <div class="info-label">TOTAL CARBON CREDITS (NFT)</div>
+                <div id="nftBalance" class="info-value highlight">0</div>
+                <div style="font-size: 0.8rem; color: var(--success);">SMART CONTRACT VERIFIED</div>
+            </div>
+
+            <div class="data-box">
+                <div class="info-label">CONNECTED IDENTITY</div>
+                <div id="userAddress" class="info-value address-val">-</div>
+            </div>
+
+            <div class="data-box">
+                <div class="info-label">NETWORK GAS (JBC)</div>
+                <div id="jbcBalance" class="info-value">- JBC</div>
+            </div>
+            
+            <button id="refreshBtn" class="btn" style="margin-top: 10px; font-size: 0.9rem; padding: 12px; background: transparent; border: 1px solid var(--primary); color: var(--primary);">🔄 REFRESH DATA</button>
+        </div>
+
+        <div id="statusMsg" class="status">Awaiting Web3 connection...</div>
+    </div>
+
+    <footer>
+        POWERED BY JIB CHAIN | ORACLE: SOPHIA 🌊
+    </footer>
+
+    <script>
+        // Target Contract from User
+        const contractAddress = "0x548369672d4fA731db155cC0FBe58F9aeB9d425C";
+        
+        // Standard ERC-721 ABI needed for reading balances
+        const abi = [
+            "function balanceOf(address owner) view returns (uint256)",
+            "function name() view returns (string)",
+            "function symbol() view returns (string)"
+        ];
+
+        // JIB Chain Configuration
+        const jibChainConfig = {
+            chainId: '0x22C3', // 8899 in Hex
+            chainName: 'JIBCHAIN L1',
+            nativeCurrency: { name: 'JBC', symbol: 'JBC', decimals: 18 },
+            rpcUrls: ['https://rpc.l1.jibchain.net'],
+            blockExplorerUrls: ['https://exp.l1.jibchain.net']
+        };
+
+        let provider;
+        let signer;
+        let userAddress;
+        let contract;
+
+        const connectBtn = document.getElementById('connectBtn');
+        const statusMsg = document.getElementById('statusMsg');
+        const walletInfo = document.getElementById('walletInfo');
+        const refreshBtn = document.getElementById('refreshBtn');
+
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    statusMsg.style.color = "#00f3ff";
+                    statusMsg.innerText = "Requesting access to wallet...";
+                    
+                    // Request account access
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    userAddress = await signer.getAddress();
+                    
+                    // Check if connected to JIB Chain
+                    const network = await provider.getNetwork();
+                    if (network.chainId !== 8899) {
+                        statusMsg.style.color = "#ffeb3b";
+                        statusMsg.innerText = "Switching to JIB Chain...";
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: jibChainConfig.chainId }],
+                            });
+                        } catch (switchError) {
+                            // If chain is not added to wallet, add it
+                            if (switchError.code === 4902) {
+                                await window.ethereum.request({
+                                    method: 'wallet_addEthereumChain',
+                                    params: [jibChainConfig]
+                                });
+                            } else {
+                                throw switchError;
+                            }
+                        }
+                        // Re-initialize provider after switch
+                        provider = new ethers.providers.Web3Provider(window.ethereum);
+                        signer = provider.getSigner();
+                    }
+
+                    // Initialize Smart Contract connection
+                    contract = new ethers.Contract(contractAddress, abi, provider);
+                    
+                    // Update UI
+                    document.getElementById('userAddress').innerText = userAddress.substring(0, 8) + '...' + userAddress.substring(34);
+                    connectBtn.style.display = 'none';
+                    walletInfo.style.display = 'block';
+                    statusMsg.style.color = "#00ff66";
+                    statusMsg.innerText = "Link Established Successfully";
+                    
+                    await updateBalances();
+
+                } catch (error) {
+                    console.error(error);
+                    statusMsg.style.color = "#ff003c";
+                    statusMsg.innerText = "Connection failed: " + (error.message.split('')[0]);
+                }
+            } else {
+                statusMsg.style.color = "#ff003c";
+                statusMsg.innerText = "Web3 Wallet (e.g. MetaMask) is not installed.";
+            }
+        }
+
+        async function updateBalances() {
+            if (!userAddress || !provider || !contract) return;
+            
+            try {
+                statusMsg.style.color = "#00f3ff";
+                statusMsg.innerText = "Syncing blockchain data...";
+                
+                // Get JBC Native Balance
+                const balanceWei = await provider.getBalance(userAddress);
+                const balanceEth = ethers.utils.formatEther(balanceWei);
+                document.getElementById('jbcBalance').innerText = parseFloat(balanceEth).toFixed(4) + " JBC";
+
+                // Get Carbon Credit (NFT) Balance from Smart Contract
+                const nftCount = await contract.balanceOf(userAddress);
+                
+                // Animate counting up
+                animateValue("nftBalance", 0, parseInt(nftCount.toString()), 1000);
+                
+                statusMsg.style.color = "#00ff66";
+                statusMsg.innerText = "Data Synced";
+                setTimeout(() => { if(statusMsg.innerText === "Data Synced") statusMsg.innerText = ""; }, 3000);
+            } catch (error) {
+                console.error("Error fetching balance:", error);
+                statusMsg.style.color = "#ff003c";
+                statusMsg.innerText = "Failed to read Smart Contract.";
+            }
+        }
+
+        // Utility to animate number counting
+        function animateValue(id, start, end, duration) {
+            if (start === end) {
+                document.getElementById(id).innerHTML = end;
+                return;
+            }
+            let range = end - start;
+            let current = start;
+            let increment = end > start ? 1 : -1;
+            let stepTime = Math.abs(Math.floor(duration / range));
+            let obj = document.getElementById(id);
+            let timer = setInterval(function() {
+                current += increment;
+                obj.innerHTML = current;
+                if (current == end) {
+                    clearInterval(timer);
+                }
+            }, stepTime);
+        }
+
+        // Event Listeners
+        connectBtn.addEventListener('click', connectWallet);
+        refreshBtn.addEventListener('click', updateBalances);
+        
+        // Handle account and network changes in MetaMask
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length > 0) {
+                    userAddress = accounts[0];
+                    document.getElementById('userAddress').innerText = userAddress.substring(0, 8) + '...' + userAddress.substring(34);
+                    updateBalances();
+                } else {
+                    walletInfo.style.display = 'none';
+                    connectBtn.style.display = 'block';
+                    statusMsg.style.color = "#ffeb3b";
+                    statusMsg.innerText = "Wallet Disconnected.";
+                }
+            });
+            window.ethereum.on('chainChanged', () => {
+                // Best practice is to reload page on chain change
+                window.location.reload();
+            });
+        }
+    </script>
+</body>
+</html>

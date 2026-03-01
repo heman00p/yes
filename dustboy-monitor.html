@@ -137,6 +137,50 @@
         .data-item.temp .data-value { color: #ff6b6b; }
         .data-item.humid .data-value { color: #48dbfb; }
 
+        /* AQI Levels */
+        .card.status-good { border-color: var(--success); box-shadow: 0 0 15px rgba(0, 255, 102, 0.1); }
+        .card.status-moderate { border-color: #facc15; }
+        .card.status-unhealthy { border-color: #fb923c; }
+        .card.status-dangerous { 
+            border-color: var(--danger); 
+            box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
+            animation: alert-pulse 2s infinite;
+        }
+
+        @keyframes alert-pulse {
+            0% { box-shadow: 0 0 10px rgba(255, 0, 60, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(255, 0, 60, 0.5); }
+            100% { box-shadow: 0 0 10px rgba(255, 0, 60, 0.2); }
+        }
+
+        .aqi-badge {
+            font-size: 0.7rem; padding: 2px 6px; border-radius: 3px;
+            font-family: 'Orbitron', sans-serif; margin-left: 8px;
+            text-transform: uppercase;
+        }
+        .bg-good { background: var(--success); color: #000; }
+        .bg-moderate { background: #facc15; color: #000; }
+        .bg-unhealthy { background: #fb923c; color: #000; }
+        .bg-dangerous { background: var(--danger); color: #fff; }
+
+        /* Critical Overlay */
+        #critical-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1000;
+            border: 0px solid var(--danger);
+            transition: border-width 0.3s ease;
+        }
+        body.critical-mode #critical-overlay {
+            border-width: 10px;
+            animation: screen-flash 1s infinite;
+        }
+
+        @keyframes screen-flash {
+            0% { opacity: 0.1; }
+            50% { opacity: 0.4; background: rgba(255, 0, 60, 0.1); }
+            100% { opacity: 0.1; }
+        }
+
         .timestamp { 
             font-size: 0.8rem; color: var(--text-muted); 
             margin-top: 15px; text-align: right; font-family: monospace;
@@ -162,7 +206,7 @@
     </style>
 </head>
 <body>
-
+<div id="critical-overlay"></div>
 <div class="container">
     <header>
         <h2><span style="font-size: 1.5rem;">🛰️</span> DUSTBOY NEON-LINK</h2>
@@ -223,15 +267,38 @@
         return '';
     }
 
+    function getAQIStatus(pm25) {
+        const val = parseFloat(pm25);
+        if (isNaN(val)) return { class: '', label: '', bg: '' };
+        if (val <= 15) return { class: 'status-good', label: 'Excellent', bg: 'bg-good' };
+        if (val <= 25) return { class: 'status-moderate', label: 'Moderate', bg: 'bg-moderate' };
+        if (val <= 37.5) return { class: 'status-unhealthy', label: 'Unhealthy', bg: 'bg-unhealthy' };
+        return { class: 'status-dangerous', label: 'CRITICAL', bg: 'bg-dangerous' };
+    }
+
     function updateUI() {
         monitorEl.innerHTML = '';
+        let hasCritical = false;
+
         Object.values(stations).sort((a, b) => b.id.localeCompare(a.id)).forEach(station => {
             const card = document.createElement('div');
-            card.className = 'card';
+            
+            // Find PM2.5 value
+            let pm25Val = null;
+            for (const [key, value] of Object.entries(station.data)) {
+                if (key.toLowerCase().includes('pm25') || key.toLowerCase() === 'pm2') {
+                    pm25Val = value;
+                    break;
+                }
+            }
+
+            const aqi = getAQIStatus(pm25Val);
+            card.className = `card ${aqi.class}`;
+            if (aqi.class === 'status-dangerous') hasCritical = true;
             
             let dataHtml = '';
             for (const [key, value] of Object.entries(station.data)) {
-                if(typeof value === 'object') continue; // Skip complex objects
+                if(typeof value === 'object') continue; 
                 
                 const highlight = getHighlightClass(key);
                 dataHtml += `
@@ -243,8 +310,11 @@
 
             card.innerHTML = `
                 <div class="card-header">
-                    <span>STATION ID</span>
-                    <span class="station-id">#${station.id}</span>
+                    <div>
+                        <span>STATION</span>
+                        <span class="station-id">#${station.id}</span>
+                        ${aqi.label ? `<span class="aqi-badge ${aqi.bg}">${aqi.label}</span>` : ''}
+                    </div>
                 </div>
                 <div class="data-grid">
                     ${dataHtml}
@@ -253,6 +323,13 @@
             `;
             monitorEl.appendChild(card);
         });
+
+        // Trigger Global Alert Mode
+        if (hasCritical) {
+            document.body.classList.add('critical-mode');
+        } else {
+            document.body.classList.remove('critical-mode');
+        }
     }
 
     client.on('error', (err) => {
